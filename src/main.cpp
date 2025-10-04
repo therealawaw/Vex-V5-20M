@@ -22,8 +22,8 @@ pros::Optical optical(12);
 pros::Rotation verticalRotation(20); //SET REVERSAL AT SCHOOL
 pros::Rotation horizontalRotation(16); //SET REVERSAL AT SCHOOL
 
-lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, 1);
-lemlib::TrackingWheel horizontalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, 1);
+lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, 1); //SET DISTANCE AT SCHOOL
+lemlib::TrackingWheel horizontalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, 1); //SET DISTANCE AT SCHOOL
 
 lemlib::OdomSensors odomSensors(&verticalWheel, nullptr, &horizontalWheel, nullptr, &imu);
 
