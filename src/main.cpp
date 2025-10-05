@@ -119,6 +119,7 @@ void stopAll() {
 
 void spinIndex(void* correctColor) {
 	blocksPassing += 1;
+	inde.brake();
 	inde.move(127 * (correctColor ? 1 : -1));
 	score.move(127 * 0.2 * (correctColor ? -1 : 0));
 	
@@ -147,12 +148,12 @@ void colorSort() {
 
 	if (isColor)
 	{
-		if (allianceColor && blocksPassing<3)
+		if (allianceColor && blocksPassing<1)
 		{
 			//std::cout << "Sorting alliance color" << std::endl;
 			pros::Task sortTask(spinIndex, (void*)true);
 		}
-		else if (opponentColor && blocksPassing<3)
+		else if (opponentColor && blocksPassing<1)
 		{
 			pros::Task sortTask(spinIndex, (void*)false);
 		} else
