@@ -1,8 +1,5 @@
 #include "main.h"
 #include "lemlib/api.hpp"
-#include "iostream"
-#include "thread"
-
 //Define variables here
 
 //Electronics
@@ -15,7 +12,7 @@ pros::Motor intake(-1, pros::v5::MotorGears::blue);
 pros::Motor inde(-5, pros::v5::MotorGears::green);
 pros::Motor score(-10, pros::v5::MotorGears::green);
 
-pros::ADIDigitalOut basket(1);
+pros::adi::DigitalOut basket(1);
 
 pros::Imu imu(6);
 pros::Optical optical(12);
@@ -115,7 +112,7 @@ void spinIndex(bool correctColor) {
 	blocksPassing += 1;
 	inde.move(127 * (correctColor ? 1 : -1));
 	score.move(127 * 0.2 * (correctColor ? -1 : 0));
-	pros::delay(800);
+	pros::delay(900);
 	blocksPassing -= 1;
 	if (blocksPassing==0)
 	{
@@ -132,11 +129,7 @@ void colorSort(bool intaking) {
 	}
 	std::cout << "Passed intake check" << std::endl;
 	bool colorSense = isAllianceColor();
-	if (colorSense == NULL)
-	{
-		inde.brake();
-		return;
-	}
+	
 	spinIndex(colorSense);
 }
 
