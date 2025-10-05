@@ -16,18 +16,18 @@ pros::adi::DigitalOut basket(1);
 
 pros::Imu imu(6);
 pros::Optical optical(12);
-pros::Rotation verticalRotation(20); //SET REVERSAL AT SCHOOL
-pros::Rotation horizontalRotation(16); //SET REVERSAL AT SCHOOL
+pros::Rotation verticalRotation(-16);
+pros::Rotation horizontalRotation(-20);
 
-lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, 1); //SET DISTANCE AT SCHOOL
-lemlib::TrackingWheel horizontalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, 1); //SET DISTANCE AT SCHOOL
+lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -0.375);
+lemlib::TrackingWheel horizontalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -1.25);
 
 lemlib::OdomSensors odomSensors(&verticalWheel, nullptr, &horizontalWheel, nullptr, &imu);
 
 lemlib::Drivetrain drivetrain(
 	&left_motors, 
 	&right_motors, 
-	12.5, 
+	11, 
 	lemlib::Omniwheel::NEW_275, 
 	450, 
 	8
@@ -47,11 +47,11 @@ lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
 lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
 	0, // integral gain (kI)
 	10, // derivative gain (kD)
-	3, // anti windup
-	1, // small error range, in degrees
-	100, // small error range timeout, in milliseconds
-	3, // large error range, in degrees
-	500, // large error range timeout, in milliseconds
+	0, // anti windup
+	0, // small error range, in inches
+	0, // small error range timeout, in milliseconds
+	0, // large error range, in inches
+	0, // large error range timeout, in milliseconds
 	0 // maximum acceleration (slew)
 );
 
@@ -65,10 +65,10 @@ lemlib::Chassis chassis(
 //Constants
 
 const float lowRed = 0;
-const float highRed = 20;
+const float highRed = 40;
 
 const float lowBlue = 170;
-const float highBlue = 220;
+const float highBlue = 240;
 
 //Variables
 
@@ -86,6 +86,7 @@ bool isRed() {
 }
 
 bool isBlue() {
+	//std::cout << "Hue: " << ((optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue) ? "Blue" : "NO") << std::endl;
 	return(optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue);
 }
 
@@ -94,6 +95,14 @@ bool isAllianceColor() {
 		return isRed();
 	} else {
 		return isBlue();
+	}
+}
+
+bool isOpponentColor() {
+	if (allianceIsRed) {
+		return isBlue();
+	} else {
+		return isRed();
 	}
 }
 
@@ -108,29 +117,50 @@ void stopAll() {
 	//std::cout << "Stopping all" << std::endl;
 }
 
-void spinIndex(bool correctColor) {
+void spinIndex(void* correctColor) {
 	blocksPassing += 1;
+	inde.brake();
 	inde.move(127 * (correctColor ? 1 : -1));
 	score.move(127 * 0.2 * (correctColor ? -1 : 0));
+	
 	pros::delay(900);
+
 	blocksPassing -= 1;
+	
 	if (blocksPassing==0)
 	{
 		inde.brake();
 		score.brake();
 	}
-	std::cout << correctColor << std::endl;
+	
+	//std::cout << "Finished sort" << std::endl;
 }
 
-void colorSort(bool intaking) {
+void colorSort() {
 	if (!intaking)
 	{
 		return;
 	}
-	std::cout << "Passed intake check" << std::endl;
-	bool colorSense = isAllianceColor();
-	
-	spinIndex(colorSense);
+
+	bool allianceColor = isAllianceColor();
+	bool opponentColor = isOpponentColor();
+	bool isColor = allianceColor || opponentColor;
+
+	if (isColor)
+	{
+		if (allianceColor && blocksPassing<1)
+		{
+			//std::cout << "Sorting alliance color" << std::endl;
+			pros::Task sortTask(spinIndex, (void*)true);
+		}
+		else if (opponentColor && blocksPassing<1)
+		{
+			pros::Task sortTask(spinIndex, (void*)false);
+		} else
+		{
+			//std::cout << "Sorting unknown color" << std::endl;
+		}
+	}
 }
 
 void spinIntake() {
@@ -184,40 +214,90 @@ void on_center_button() {
 	}
 }
 
+void printTrackingWheels() {
+	while (true) {
+		pros::lcd::print(0, "Vertical: %f", chassis.getPose().y);
+		pros::lcd::print(1, "Horizontal: %f", chassis.getPose().x);
+		pros::lcd::print(2, "Heading: %f", chassis.getPose().theta);
+		std::cout << "Vertical: " << chassis.getPose().y << " Horizontal: " << chassis.getPose().x << " Heading: " << chassis.getPose().theta << std::endl;
+		pros::delay(100);
+	}
+}
 
 void initialize() {
 
 	chassis.calibrate();
 
 	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
+	//pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
+
+	//std::cout << "Ran initialize" << std::endl;
+
+	pros::Task trackingWheelPrinter(printTrackingWheels);
 }
 
 
-void disabled() {}
-
-void competition_initialize() {}
-
-void autonomous() {}
-
-void colorSortTask() {
-	while (true) {
-		colorSort(intaking);
+void disabled() {//std::cout << "Ran disable" << std::endl;
 	}
+
+void competition_initialize() { //std::cout << "ran comp initialize" << std::endl;
+	}
+
+void leavePark(){
+	chassis.moveToPoint(0, 3, 100);
+}
+
+void rightSideAuton(){
+	chassis.moveToPoint(0, 7.5, 100);
+	chassis.turnToHeading(25, 100);
+	spinIntake();
+	chassis.moveToPoint(7.5, 17.5, 100);
+	stopAll();
+	chassis.turnToHeading(-45, 100);
+	chassis.moveToPose(-7, 30.5, -45, 200);
+	spinBottomCenter();
+	pros::delay(1000);
+	stopAll();
+	pros::delay(500);
+	spinBottomCenter();
+	pros::delay(1000);
+	stopAll();
+	pros::delay(500);
+	spinBottomCenter();
+}
+
+void testAngularPid(){
+	// set position to x:0, y:0, heading:0
+    chassis.setPose(0, 0, 0);
+	std::cout << "Set pose to 0, 0, 0" << std::endl;
+    // turn to face heading 90 with a very long timeout
+    chassis.turnToHeading(90, 100000);
+	std::cout << "Turned to 90" << std::endl;
+}
+
+void autonomous() {
+	//leavePark();
+	//rightSideAuton();
+	//testAngularPid();
+	//std::cout << "Ran auton" << std::endl;
+	chassis.moveToPoint(0, 24, 100);
 }
 
 void opcontrol() {
-	intake.move_velocity(600);
-	inde.move_velocity(200);
-	score.move_velocity(200);
-	optical.set_led_pwm(100);
+	autonomous();
 
-	pros::Task colorSort_thread(colorSortTask);
+	//std::cout << "Starting op" << std::endl;
+	optical.set_led_pwm(100);
 
 	while (true)
 	{
+		colorSort();
+
+		//std::cout << "Starting loop" << std::endl;
+
 		drive();
+
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && (scoring==1 || scoring==0)) {
 			//std::cout << "Spinning bottom center" << std::endl;
 			spinBottomCenter();
@@ -233,6 +313,9 @@ void opcontrol() {
 		}else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && (scoring==-1 || scoring==0)) {
 			//std::cout << "Spinning intake" << std::endl;
 			spinIntake();
+
 		} else {stopAll();}
+
+		//std::cout << "Finished loop" << std::endl;
 	}
 }
