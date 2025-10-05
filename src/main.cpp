@@ -135,6 +135,7 @@ void colorSort() {
 	{
 		return;
 	}
+
 	std::cout << "Passed intake check" << std::endl;
 	bool colorSense = isAllianceColor();
 	
@@ -211,7 +212,8 @@ void competition_initialize() { std::cout << "ran comp initialize" << std::endl;
 
 void colorSortTask() {
 	while (true) {
-		pros::Task colorSortThread(colorSort);
+		colorSort();
+		pros::delay(20);
 	}
 }
 
