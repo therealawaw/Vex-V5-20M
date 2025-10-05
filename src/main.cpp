@@ -16,11 +16,11 @@ pros::adi::DigitalOut basket(1);
 
 pros::Imu imu(6);
 pros::Optical optical(12);
-pros::Rotation verticalRotation(20); //SET REVERSAL AT SCHOOL
-pros::Rotation horizontalRotation(16); //SET REVERSAL AT SCHOOL
+pros::Rotation verticalRotation(-16); //SET REVERSAL AT SCHOOL
+pros::Rotation horizontalRotation(-20); //SET REVERSAL AT SCHOOL
 
-lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, 1); //SET DISTANCE AT SCHOOL
-lemlib::TrackingWheel horizontalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, 1); //SET DISTANCE AT SCHOOL
+lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -0.375, 1); //SET DISTANCE AT SCHOOL
+lemlib::TrackingWheel horizontalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -1.25, 1); //SET DISTANCE AT SCHOOL
 
 lemlib::OdomSensors odomSensors(&verticalWheel, nullptr, &horizontalWheel, nullptr, &imu);
 
@@ -47,11 +47,11 @@ lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
 lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
 	0, // integral gain (kI)
 	10, // derivative gain (kD)
-	3, // anti windup
-	1, // small error range, in degrees
-	100, // small error range timeout, in milliseconds
-	3, // large error range, in degrees
-	500, // large error range timeout, in milliseconds
+	0, // anti windup
+	0, // small error range, in inches
+	0, // small error range timeout, in milliseconds
+	0, // large error range, in inches
+	0, // large error range timeout, in milliseconds
 	0 // maximum acceleration (slew)
 );
 
@@ -86,7 +86,7 @@ bool isRed() {
 }
 
 bool isBlue() {
-	std::cout << "Hue: " << ((optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue) ? "Blue" : "NO") << std::endl;
+	//std::cout << "Hue: " << ((optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue) ? "Blue" : "NO") << std::endl;
 	return(optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue);
 }
 
@@ -132,7 +132,7 @@ void spinIndex(void* correctColor) {
 		score.brake();
 	}
 	
-	std::cout << "Finished sort" << std::endl;
+	//std::cout << "Finished sort" << std::endl;
 }
 
 void colorSort() {
@@ -149,7 +149,7 @@ void colorSort() {
 	{
 		if (allianceColor && blocksPassing<3)
 		{
-			std::cout << "Sorting alliance color" << std::endl;
+			//std::cout << "Sorting alliance color" << std::endl;
 			pros::Task sortTask(spinIndex, (void*)true);
 		}
 		else if (opponentColor && blocksPassing<3)
@@ -157,7 +157,7 @@ void colorSort() {
 			pros::Task sortTask(spinIndex, (void*)false);
 		} else
 		{
-			std::cout << "Sorting unknown color" << std::endl;
+			//std::cout << "Sorting unknown color" << std::endl;
 		}
 	}
 }
@@ -222,13 +222,15 @@ void initialize() {
 	pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
 
-	std::cout << "Ran initialize" << std::endl;
+	//std::cout << "Ran initialize" << std::endl;
 }
 
 
-void disabled() {std::cout << "Ran disable" << std::endl;}
+void disabled() {//std::cout << "Ran disable" << std::endl;
+	}
 
-void competition_initialize() { std::cout << "ran comp initialize" << std::endl;}
+void competition_initialize() { //std::cout << "ran comp initialize" << std::endl;
+	}
 
 void leavePark(){
 	chassis.moveToPoint(0, 3, 100);
@@ -253,43 +255,56 @@ void rightSideAuton(){
 	spinBottomCenter();
 }
 
+void testAngularPid(){
+	// set position to x:0, y:0, heading:0
+    chassis.setPose(0, 0, 0);
+	std::cout << "Set pose to 0, 0, 0" << std::endl;
+    // turn to face heading 90 with a very long timeout
+    chassis.turnToHeading(90, 100000);
+	std::cout << "Turned to 90" << std::endl;
+}
+
 void autonomous() {
 	//leavePark();
-	//leftSideAuton();
-	std::cout << "Ran auton" << std::endl;
+	//rightSideAuton();
+	//testAngularPid();
+	//std::cout << "Ran auton" << std::endl;
+	chassis.moveToPoint(0, 24, 100);
 }
 
 void opcontrol() {
 
-	std::cout << "Starting op" << std::endl;
+	autonomous();
+
+	//std::cout << "Starting op" << std::endl;
 	optical.set_led_pwm(100);
 
 	while (true)
 	{
 		colorSort();
 
-		std::cout << "Starting loop" << std::endl;
+		//std::cout << "Starting loop" << std::endl;
 
 		drive();
 
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && (scoring==1 || scoring==0)) {
-			std::cout << "Spinning bottom center" << std::endl;
+			//std::cout << "Spinning bottom center" << std::endl;
 			spinBottomCenter();
 
 		}else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && (scoring==3 || scoring==0)) {
-			std::cout << "Spinning long goal" << std::endl;
+			//std::cout << "Spinning long goal" << std::endl;
 			spinLongGoal();
 
 		}else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2) && (scoring==2 || scoring==0)) {
-			std::cout << "Spinning top center" << std::endl;
+			//std::cout << "Spinning top center" << std::endl;
 			spinTopCenter();
 
 		}else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && (scoring==-1 || scoring==0)) {
-			std::cout << "Spinning intake" << std::endl;
+			//std::cout << "Spinning intake" << std::endl;
 			spinIntake();
 
 		} else {stopAll();}
 
-		std::cout << "Finished loop" << std::endl;
+		//std::cout << "Finished loop" << std::endl;
 	}
 }
