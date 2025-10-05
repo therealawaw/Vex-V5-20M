@@ -234,8 +234,7 @@ void leavePark(){
 	chassis.moveToPoint(0, 3, 100);
 }
 
-void leftSideAuton(){
-	//pros::Task colorSort_thread(colorSortTask);
+void rightSideAuton(){
 	chassis.moveToPoint(0, 7.5, 100);
 	chassis.turnToHeading(25, 100);
 	spinIntake();
