@@ -86,6 +86,7 @@ bool isRed() {
 }
 
 bool isBlue() {
+	std::cout << "Hue: " << ((optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue) ? "Blue" : "NO") << std::endl;
 	return(optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue);
 }
 
@@ -112,17 +113,24 @@ void spinIndex(bool correctColor) {
 	blocksPassing += 1;
 	inde.move(127 * (correctColor ? 1 : 0));
 	score.move(127 * 0.2 * (correctColor ? -1 : 0));
-	pros::delay(900);
+	
+	if (blocksPassing>0)
+	{
+		pros::delay(900);
+	}
+
 	blocksPassing -= 1;
+	
 	if (blocksPassing==0)
 	{
 		inde.brake();
 		score.brake();
 	}
-	std::cout << "ahh" << std::endl;
+	
+	std::cout << "Finished sort" << std::endl;
 }
 
-void colorSort(bool intaking) {
+void colorSort() {
 	if (!intaking)
 	{
 		return;
@@ -192,16 +200,18 @@ void initialize() {
 	pros::lcd::initialize();
 	pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
+
+	std::cout << "Ran initialize" << std::endl;
 }
 
 
-void disabled() {}
+void disabled() {std::cout << "Ran disable" << std::endl;}
 
-void competition_initialize() {}
+void competition_initialize() { std::cout << "ran comp initialize" << std::endl;}
 
 void colorSortTask() {
 	while (true) {
-		colorSort(intaking);
+		pros::Task colorSortThread(colorSort);
 	}
 }
 
@@ -229,32 +239,39 @@ void leftSideAuton(){
 	spinBottomCenter();
 }
 
+void autonomous() {
+	//leavePark();
+	//leftSideAuton();
+	std::cout << "Ran auton" << std::endl;
+}
+
 void opcontrol() {
-	intake.move_velocity(600);
-	inde.move_velocity(200);
-	score.move_velocity(200);
+
+	std::cout << "Starting op" << std::endl;
 	optical.set_led_pwm(100);
 
 	pros::Task colorSort_thread(colorSortTask);
 
 	while (true)
 	{
+		std::cout << "Starting loop" << std::endl;
 		drive();
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && (scoring==1 || scoring==0)) {
-			//std::cout << "Spinning bottom center" << std::endl;
+			std::cout << "Spinning bottom center" << std::endl;
 			spinBottomCenter();
 
 		}else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && (scoring==3 || scoring==0)) {
-			//std::cout << "Spinning long goal" << std::endl;
+			std::cout << "Spinning long goal" << std::endl;
 			spinLongGoal();
 
 		}else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2) && (scoring==2 || scoring==0)) {
-			//std::cout << "Spinning top center" << std::endl;
+			std::cout << "Spinning top center" << std::endl;
 			spinTopCenter();
 
 		}else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && (scoring==-1 || scoring==0)) {
-			//std::cout << "Spinning intake" << std::endl;
+			std::cout << "Spinning intake" << std::endl;
 			spinIntake();
 		} else {stopAll();}
+		std::cout << "Finished loop" << std::endl;
 	}
 }
