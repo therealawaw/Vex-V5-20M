@@ -27,7 +27,7 @@ lemlib::OdomSensors odomSensors(&verticalWheel, nullptr, &horizontalWheel, nullp
 lemlib::Drivetrain drivetrain(
 	&left_motors, 
 	&right_motors, 
-	12.5, 
+	11, 
 	lemlib::Omniwheel::NEW_275, 
 	450, 
 	8
@@ -98,6 +98,14 @@ bool isAllianceColor() {
 	}
 }
 
+bool isOpponentColor() {
+	if (allianceIsRed) {
+		return isBlue();
+	} else {
+		return isRed();
+	}
+}
+
 //Roller Functions
 
 void stopAll() {
@@ -109,15 +117,12 @@ void stopAll() {
 	//std::cout << "Stopping all" << std::endl;
 }
 
-void spinIndex(bool correctColor) {
+void spinIndex(void* correctColor) {
 	blocksPassing += 1;
 	inde.move(127 * (correctColor ? 1 : 0));
 	score.move(127 * 0.2 * (correctColor ? -1 : 0));
 	
-	if (blocksPassing>0)
-	{
-		pros::delay(900);
-	}
+	pros::delay(900);
 
 	blocksPassing -= 1;
 	
@@ -136,10 +141,25 @@ void colorSort() {
 		return;
 	}
 
-	std::cout << "Passed intake check" << std::endl;
-	bool colorSense = isAllianceColor();
-	
-	spinIndex(colorSense);
+	bool allianceColor = isAllianceColor();
+	bool opponentColor = isOpponentColor();
+	bool isColor = allianceColor || opponentColor;
+
+	if (isColor)
+	{
+		if (allianceColor && blocksPassing<3)
+		{
+			std::cout << "Sorting alliance color" << std::endl;
+			pros::Task sortTask(spinIndex, (void*)true);
+		}
+		else if (opponentColor && blocksPassing<3)
+		{
+			pros::Task sortTask(spinIndex, (void*)false);
+		} else
+		{
+			std::cout << "Sorting unknown color" << std::endl;
+		}
+	}
 }
 
 void spinIntake() {
@@ -210,13 +230,6 @@ void disabled() {std::cout << "Ran disable" << std::endl;}
 
 void competition_initialize() { std::cout << "ran comp initialize" << std::endl;}
 
-void colorSortTask() {
-	while (true) {
-		colorSort();
-		pros::delay(10);
-	}
-}
-
 void leavePark(){
 	chassis.moveToPoint(0, 3, 100);
 }
@@ -252,12 +265,14 @@ void opcontrol() {
 	std::cout << "Starting op" << std::endl;
 	optical.set_led_pwm(100);
 
-	pros::Task colorSort_thread(colorSortTask);
-
 	while (true)
 	{
+		colorSort();
+
 		std::cout << "Starting loop" << std::endl;
+
 		drive();
+
 		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2) && (scoring==1 || scoring==0)) {
 			std::cout << "Spinning bottom center" << std::endl;
 			spinBottomCenter();
@@ -273,7 +288,9 @@ void opcontrol() {
 		}else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && (scoring==-1 || scoring==0)) {
 			std::cout << "Spinning intake" << std::endl;
 			spinIntake();
+
 		} else {stopAll();}
+
 		std::cout << "Finished loop" << std::endl;
 	}
 }
