@@ -1,8 +1,5 @@
 #include "main.h"
 #include "lemlib/api.hpp"
-#include "iostream"
-#include "thread"
-
 //Define variables here
 
 //Electronics
@@ -15,7 +12,7 @@ pros::Motor intake(-1, pros::v5::MotorGears::blue);
 pros::Motor inde(-5, pros::v5::MotorGears::green);
 pros::Motor score(-10, pros::v5::MotorGears::green);
 
-pros::ADIDigitalOut basket(1);
+pros::adi::DigitalOut basket(1);
 
 pros::Imu imu(6);
 pros::Optical optical(12);
@@ -68,7 +65,7 @@ lemlib::Chassis chassis(
 //Constants
 
 const float lowRed = 0;
-const float highRed = 20;
+const float highRed = 40;
 
 const float lowBlue = 170;
 const float highBlue = 220;
@@ -113,16 +110,16 @@ void stopAll() {
 
 void spinIndex(bool correctColor) {
 	blocksPassing += 1;
-	inde.move(127 * (correctColor ? 1 : -1));
+	inde.move(127 * (correctColor ? 1 : 0));
 	score.move(127 * 0.2 * (correctColor ? -1 : 0));
-	pros::delay(800);
+	pros::delay(900);
 	blocksPassing -= 1;
 	if (blocksPassing==0)
 	{
 		inde.brake();
 		score.brake();
 	}
-	std::cout << correctColor << std::endl;
+	std::cout << "ahh" << std::endl;
 }
 
 void colorSort(bool intaking) {
@@ -132,11 +129,7 @@ void colorSort(bool intaking) {
 	}
 	std::cout << "Passed intake check" << std::endl;
 	bool colorSense = isAllianceColor();
-	if (colorSense == NULL)
-	{
-		inde.brake();
-		return;
-	}
+	
 	spinIndex(colorSense);
 }
 
@@ -206,12 +199,34 @@ void disabled() {}
 
 void competition_initialize() {}
 
-void autonomous() {}
-
 void colorSortTask() {
 	while (true) {
 		colorSort(intaking);
 	}
+}
+
+void leavePark(){
+	chassis.moveToPoint(0, 3, 100);
+}
+
+void leftSideAuton(){
+	pros::Task colorSort_thread(colorSortTask);
+	chassis.moveToPoint(0, 7.5, 100);
+	chassis.turnToHeading(25, 100);
+	spinIntake();
+	chassis.moveToPoint(7.5, 17.5, 100);
+	stopAll();
+	chassis.turnToHeading(-45, 100);
+	chassis.moveToPose(-7, 30.5, -45, 200);
+	spinBottomCenter();
+	pros::delay(1000);
+	stopAll();
+	pros::delay(500);
+	spinBottomCenter();
+	pros::delay(1000);
+	stopAll();
+	pros::delay(500);
+	spinBottomCenter();
 }
 
 void opcontrol() {
