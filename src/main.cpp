@@ -68,7 +68,7 @@ const float lowRed = 0;
 const float highRed = 40;
 
 const float lowBlue = 170;
-const float highBlue = 220;
+const float highBlue = 240;
 
 //Variables
 
@@ -213,7 +213,7 @@ void competition_initialize() { std::cout << "ran comp initialize" << std::endl;
 void colorSortTask() {
 	while (true) {
 		colorSort();
-		pros::delay(20);
+		pros::delay(10);
 	}
 }
 
@@ -222,7 +222,7 @@ void leavePark(){
 }
 
 void leftSideAuton(){
-	pros::Task colorSort_thread(colorSortTask);
+	//pros::Task colorSort_thread(colorSortTask);
 	chassis.moveToPoint(0, 7.5, 100);
 	chassis.turnToHeading(25, 100);
 	spinIntake();
