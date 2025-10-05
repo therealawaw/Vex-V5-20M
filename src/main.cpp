@@ -213,6 +213,15 @@ void on_center_button() {
 	}
 }
 
+void printTrackingWheels() {
+	while (true) {
+		//pros::lcd::print(0, "Vertical: %f", chassis.getPose().y);
+		//pros::lcd::print(1, "Horizontal: %f", chassis.getPose().x);
+		//pros::lcd::print(2, "Heading: %f", chassis.getPose().theta);
+		std::cout << "Vertical: " << chassis.getPose().y << " Horizontal: " << chassis.getPose().x << " Heading: " << chassis.getPose().theta << std::endl;
+		pros::delay(100);
+	}
+}
 
 void initialize() {
 
@@ -272,16 +281,6 @@ void autonomous() {
 	//testAngularPid();
 	//std::cout << "Ran auton" << std::endl;
 	chassis.moveToPoint(0, 24, 100);
-}
-
-void printTrackingWheels() {
-	while (true) {
-		//pros::lcd::print(0, "Vertical: %f", chassis.getPose().y);
-		//pros::lcd::print(1, "Horizontal: %f", chassis.getPose().x);
-		//pros::lcd::print(2, "Heading: %f", chassis.getPose().theta);
-		std::cout << "Vertical: " << chassis.getPose().y << " Horizontal: " << chassis.getPose().x << " Heading: " << chassis.getPose().theta << std::endl;
-		pros::delay(100);
-	}
 }
 
 void opcontrol() {
