@@ -16,11 +16,11 @@ pros::adi::DigitalOut basket(1);
 
 pros::Imu imu(6);
 pros::Optical optical(12);
-pros::Rotation verticalRotation(-16); //SET REVERSAL AT SCHOOL
-pros::Rotation horizontalRotation(-20); //SET REVERSAL AT SCHOOL
+pros::Rotation verticalRotation(-16);
+pros::Rotation horizontalRotation(-20);
 
-lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -0.375, 1); //SET DISTANCE AT SCHOOL
-lemlib::TrackingWheel horizontalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -1.25, 1); //SET DISTANCE AT SCHOOL
+lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -0.375);
+lemlib::TrackingWheel horizontalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -1.25);
 
 lemlib::OdomSensors odomSensors(&verticalWheel, nullptr, &horizontalWheel, nullptr, &imu);
 
@@ -119,7 +119,7 @@ void stopAll() {
 
 void spinIndex(void* correctColor) {
 	blocksPassing += 1;
-	inde.move(127 * (correctColor ? 1 : 0));
+	inde.move(127 * (correctColor ? 1 : -1));
 	score.move(127 * 0.2 * (correctColor ? -1 : 0));
 	
 	pros::delay(900);
@@ -219,10 +219,12 @@ void initialize() {
 	chassis.calibrate();
 
 	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
+	//pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
 
 	//std::cout << "Ran initialize" << std::endl;
+
+	pros::Task trackingWheelPrinter(printTrackingWheels);
 }
 
 
@@ -272,8 +274,17 @@ void autonomous() {
 	chassis.moveToPoint(0, 24, 100);
 }
 
-void opcontrol() {
+void printTrackingWheels() {
+	while (true) {
+		//pros::lcd::print(0, "Vertical: %f", chassis.getPose().y);
+		//pros::lcd::print(1, "Horizontal: %f", chassis.getPose().x);
+		//pros::lcd::print(2, "Heading: %f", chassis.getPose().theta);
+		std::cout << "Vertical: " << chassis.getPose().y << " Horizontal: " << chassis.getPose().x << " Heading: " << chassis.getPose().theta << std::endl;
+		pros::delay(100);
+	}
+}
 
+void opcontrol() {
 	autonomous();
 
 	//std::cout << "Starting op" << std::endl;
