@@ -20,7 +20,7 @@ pros::Rotation verticalRotation(-16); //SET REVERSAL AT SCHOOL
 pros::Rotation horizontalRotation(-20); //SET REVERSAL AT SCHOOL
 
 lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -0.375); //SET DISTANCE AT SCHOOL
-lemlib::TrackingWheel horizontalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -1.25); //SET DISTANCE AT SCHOOL
+lemlib::TrackingWheel horizontalWheel(&horizontalRotation, lemlib::Omniwheel::NEW_2, -1.25); //SET DISTANCE AT SCHOOL
 
 lemlib::OdomSensors odomSensors(&verticalWheel, nullptr, &horizontalWheel, nullptr, &imu);
 
@@ -33,7 +33,7 @@ lemlib::Drivetrain drivetrain(
 	8
 );
 
-lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
+lemlib::ControllerSettings lateral_controller(10000, // proportional gain (kP)
 	0, // integral gain (kI)
 	3, // derivative gain (kD)
 	3, // anti windup
@@ -44,9 +44,9 @@ lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
 	20 // maximum acceleration (slew)
 );
 
-lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
+lemlib::ControllerSettings angular_controller(10, // proportional gain (kP)
 	0, // integral gain (kI)
-	20, // derivative gain (kD)
+	0, // derivative gain (kD)
 	0, // anti windup
 	0, // small error range, in inches
 	0, // small error range timeout, in milliseconds
