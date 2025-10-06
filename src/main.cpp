@@ -70,6 +70,8 @@ const float highRed = 40;
 const float lowBlue = 170;
 const float highBlue = 240;
 
+const float farthestBlock = 200;
+
 //Variables
 
 bool allianceIsRed = false; //Assume red until set otherwise
@@ -86,7 +88,7 @@ bool isRed() {
 }
 
 bool isBlue() {
-	std::cout << "Hue: " << ((optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue) ? "Blue" : "NO") << std::endl;
+	//std::cout << "Hue: " << ((optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue) ? "Blue" : "NO") << std::endl;
 	return(optical.get_hue() >= lowBlue && optical.get_hue() <= highBlue);
 }
 
@@ -117,22 +119,31 @@ void stopAll() {
 	//std::cout << "Stopping all" << std::endl;
 }
 
-void spinIndex(void* correctColor) {
-	blocksPassing += 1;
-	inde.move(127 * (correctColor ? 1 : -1));
-	score.move(127 * 0.2 * (correctColor ? -1 : 0));
+void spinIndex(bool correctColor, bool opponentColor) {
+    static bool running = false;
+    static uint32_t startTime = 0;
+    static int direction = 0;
+	bool isColor = (correctColor || opponentColor) && (optical.get_proximity() > farthestBlock);
 	
-	pros::delay(900);
+	//std::cout << "Proximity: " << optical.get_proximity() << ", isColor: " << isColor << ", correctColor: " << correctColor << ", opponentColor: " << opponentColor << ", In proximity: " << (optical.get_proximity() > farthestBlock) << ", Is a Color: " << (correctColor || opponentColor) << std::endl;
 
-	blocksPassing -= 1;
-	
-	if (blocksPassing==0)
-	{
-		inde.brake();
-		score.brake();
-	}
-	
-	std::cout << "Finished sort" << std::endl;
+    // if not currently running, start a new sort
+    if ((!running) && isColor) {
+        running = true;
+        startTime = pros::millis();
+        direction = correctColor ? 1 : -1;
+
+        inde.move(127 * direction);
+        score.move(127 * 0.2 * (correctColor ? -1 : 0));
+    }
+
+    // if running, check if time has passed
+    if (running && pros::millis() - startTime >= 900) {
+        inde.brake();
+        score.brake();
+        running = false;
+        std::cout << "Finished sort" << std::endl;
+    }
 }
 
 void colorSort() {
@@ -143,23 +154,8 @@ void colorSort() {
 
 	bool allianceColor = isAllianceColor();
 	bool opponentColor = isOpponentColor();
-	bool isColor = allianceColor || opponentColor;
-
-	if (isColor)
-	{
-		if (allianceColor && blocksPassing<3)
-		{
-			std::cout << "Sorting alliance color" << std::endl;
-			pros::Task sortTask(spinIndex, (void*)true);
-		}
-		else if (opponentColor && blocksPassing<3)
-		{
-			pros::Task sortTask(spinIndex, (void*)false);
-		} else
-		{
-			std::cout << "Sorting unknown color" << std::endl;
-		}
-	}
+	
+	spinIndex(allianceColor, opponentColor);
 }
 
 void spinIntake() {
@@ -218,6 +214,7 @@ void printValuesOnBrain() {
 		pros::lcd::print(0, "Heading: %.2f", imu.get_heading());
 		pros::lcd::print(1, "X: %.2f", chassis.getPose().x);
 		pros::lcd::print(2, "Y: %.2f", chassis.getPose().y);
+		std::cout << "Heading: " << imu.get_heading() << ", X: " << chassis.getPose().x << ", Y: " << chassis.getPose().y << std::endl;
 		pros::delay(100);
 	}
 }
@@ -290,7 +287,7 @@ void opcontrol() {
 	{
 		colorSort();
 
-		std::cout << "Starting loop" << std::endl;
+		//std::cout << "Starting loop" << std::endl;
 
 		drive();
 
@@ -307,11 +304,11 @@ void opcontrol() {
 			spinTopCenter();
 
 		}else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && (scoring==-1 || scoring==0)) {
-			std::cout << "Spinning intake" << std::endl;
+			//std::cout << "Spinning intake" << std::endl;
 			spinIntake();
 
 		} else {stopAll();}
 
-		std::cout << "Finished loop" << std::endl;
+		//std::cout << "Finished loop" << std::endl;
 	}
 }
