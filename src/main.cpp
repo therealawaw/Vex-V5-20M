@@ -5,8 +5,8 @@
 //Electronics
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 
-pros::MotorGroup left_motors({17, 13, -14}, pros::v5::MotorGears::blue);
-pros::MotorGroup right_motors({18, 2, -15}, pros::v5::MotorGears::blue);
+pros::MotorGroup left_motors({-17, -13, 14}, pros::v5::MotorGears::blue);
+pros::MotorGroup right_motors({-18, -2, 15}, pros::v5::MotorGears::blue);
 
 pros::Motor intake(-1, pros::v5::MotorGears::blue);
 pros::Motor inde(-5, pros::v5::MotorGears::green);
@@ -33,7 +33,7 @@ lemlib::Drivetrain drivetrain(
 	8
 );
 
-lemlib::ControllerSettings lateral_controller(10000, // proportional gain (kP)
+lemlib::ControllerSettings lateral_controller(3, // proportional gain (kP)
 	0, // integral gain (kI)
 	3, // derivative gain (kD)
 	3, // anti windup
@@ -44,14 +44,14 @@ lemlib::ControllerSettings lateral_controller(10000, // proportional gain (kP)
 	20 // maximum acceleration (slew)
 );
 
-lemlib::ControllerSettings angular_controller(10, // proportional gain (kP)
+lemlib::ControllerSettings angular_controller(3, // proportional gain (kP)
 	0, // integral gain (kI)
-	0, // derivative gain (kD)
-	0, // anti windup
-	0, // small error range, in inches
-	0, // small error range timeout, in milliseconds
-	0, // large error range, in inches
-	0, // large error range timeout, in milliseconds
+	10, // derivative gain (kD)
+	3, // anti windup
+	1, // small error range, in degrees
+	100, // small error range timeout, in milliseconds
+	3, // large error range, in degrees
+	500, // large error range timeout, in milliseconds
 	0 // maximum acceleration (slew)
 );
 
@@ -198,7 +198,7 @@ void drive() {
 	int leftY = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
 	int rightX = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-	chassis.arcade(-rightX, -leftY);
+	chassis.arcade(rightX, leftY);
 }
 
 //Competition Functions
@@ -213,6 +213,15 @@ void on_center_button() {
 	}
 }
 
+void printValuesOnBrain() {
+	while (true) {
+		pros::lcd::print(0, "Heading: %.2f", imu.get_heading());
+		pros::lcd::print(1, "X: %.2f", chassis.getPose().x);
+		pros::lcd::print(2, "Y: %.2f", chassis.getPose().y);
+		pros::delay(100);
+	}
+}
+
 
 void initialize() {
 
@@ -222,7 +231,11 @@ void initialize() {
 	pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
 
+	pros::Task printTask(printValuesOnBrain);
+
 	std::cout << "Ran initialize" << std::endl;
+
+
 }
 
 
@@ -269,7 +282,6 @@ void autonomous() {
 }
 
 void opcontrol() {
-	autonomous();
 
 	std::cout << "Starting op" << std::endl;
 	optical.set_led_pwm(100);
