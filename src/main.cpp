@@ -80,6 +80,9 @@ bool allianceIsRed = false; //Assume red until set otherwise
 bool intaking = false;
 int scoring = 0; //0 = not scoring, 1 = bottom center, 2 = top center, 3 = long goal
 int blocksPassing = 0;
+int autonSelect = 0; //left = 0, right = 1, skills = 2
+
+std::string autonNames[3] = {"Left", "Right", "Skills"};
 
 //Start Functions here
 
@@ -235,7 +238,7 @@ void initialize() {
 	pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
 
-	pros::Task printTask(printValuesOnBrain);
+	//pros::Task printTask(printValuesOnBrain);
 
 	std::cout << "Ran initialize" << std::endl;
 
@@ -245,13 +248,63 @@ void initialize() {
 
 void disabled() {std::cout << "Ran disable" << std::endl;}
 
-void competition_initialize() { std::cout << "ran comp initialize" << std::endl;}
+void competition_initialize() {
+	static bool debounce = false;
+
+	while (pros::competition::is_disabled)
+	{
+		uint8_t buttons = pros::lcd::read_buttons();
+		if (buttons == 100 && !debounce) // left button
+		{
+			autonSelect = std::clamp(autonSelect-1, 0, 2);
+			pros::lcd::set_text(1, "Atuton: " + autonNames[autonSelect]);
+			debounce = true;
+		} else if (buttons == 001 && !debounce) // right button
+		{
+			autonSelect = std::clamp(autonSelect+1, 0, 2);
+			pros::lcd::set_text(1, "Atuton: " + autonNames[autonSelect]);
+			debounce = true;
+		} 
+		else if (buttons == 010 && !debounce) // center button
+		{
+			debounce = true;
+			break;
+		} else if (buttons == 0)
+		{
+			debounce = false;
+		}
+	}
+	
+	while (pros::competition::is_disabled)
+	{
+		uint8_t buttons = pros::lcd::read_buttons();
+		if (buttons == 100 && !debounce) // left button
+		{
+			allianceIsRed = !allianceIsRed;
+			pros::lcd::set_text(2, "Alliance: " + allianceIsRed ? "Red" : "Blue");
+			debounce = true;
+		} else if (buttons == 001 && !debounce) // right button
+		{
+			allianceIsRed = !allianceIsRed;
+			pros::lcd::set_text(2, "Alliance: " + allianceIsRed ? "Red" : "Blue");
+			debounce = true;
+		} 
+		else if (buttons == 010 && !debounce) // center button
+		{
+			debounce = true;
+			break;
+		} else if (buttons == 0)
+		{
+			debounce = false;
+		}
+	}
+}
 
 void leavePark(){
 	chassis.moveToPoint(0, 3, 100);
 }
 
-void leftSideAuton(){
+void rightSideAuton(){
 	//pros::Task colorSort_thread(colorSortTask);
 	chassis.moveToPoint(0, 7.5, 100);
 	chassis.turnToHeading(25, 100);
@@ -271,6 +324,26 @@ void leftSideAuton(){
 	spinBottomCenter();
 }
 
+void leftSideAuton(){
+	//pros::Task colorSort_thread(colorSortTask);
+	chassis.moveToPoint(0, 7.5, 100);
+	chassis.turnToHeading(-25, 100);
+	spinIntake();
+	chassis.moveToPoint(-7.5, 17.5, 100);
+	stopAll();
+	chassis.turnToHeading(45, 100);
+	chassis.moveToPose(7, 30.5, 45, 200);
+	spinTopCenter();
+	pros::delay(1000);
+	stopAll();
+	pros::delay(500);
+	spinTopCenter();
+	pros::delay(1000);
+	stopAll();
+	pros::delay(500);
+	spinTopCenter();
+}
+
 void testAngularPid(){
 	// set position to x:0, y:0, heading:0
     
@@ -287,8 +360,8 @@ void autonomous() {
 	chassis.setPose(0, 0, 0);
 	//leavePark();
 	//leftSideAuton();
-	testAngularPid();
-	//testLateralPid();
+	//testAngularPid();
+	testLateralPid();
 	intake.move(127);
 	pros::delay(5000);
 	intake.brake();
