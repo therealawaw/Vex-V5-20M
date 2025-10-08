@@ -6,15 +6,16 @@
 pros::Controller master(pros::E_CONTROLLER_MASTER);
 
 pros::MotorGroup left_motors({-17, -13, 14}, pros::v5::MotorGears::blue);
-pros::MotorGroup right_motors({-18, -2, 15}, pros::v5::MotorGears::blue);
+pros::MotorGroup right_motors({18, 2, -15}, pros::v5::MotorGears::blue);
 
 pros::Motor intake(-1, pros::v5::MotorGears::blue);
 pros::Motor inde(-5, pros::v5::MotorGears::green);
 pros::Motor score(-10, pros::v5::MotorGears::green);
 
 pros::adi::DigitalOut basket(1);
+pros::adi::Led led1('C', 10);
 
-pros::Imu imu(6);
+pros::Imu imu(7);
 pros::Optical optical(12);
 pros::Rotation verticalRotation(-16); //SET REVERSAL AT SCHOOL
 pros::Rotation horizontalRotation(-20); //SET REVERSAL AT SCHOOL
@@ -28,7 +29,7 @@ lemlib::Drivetrain drivetrain(
 	&left_motors, 
 	&right_motors, 
 	11, 
-	lemlib::Omniwheel::NEW_275, 
+	lemlib::Omniwheel::NEW_325, 
 	450, 
 	8
 );
@@ -44,7 +45,8 @@ lemlib::ControllerSettings lateral_controller(3, // proportional gain (kP)
 	20 // maximum acceleration (slew)
 );
 
-lemlib::ControllerSettings angular_controller(3, // proportional gain (kP)
+lemlib::ControllerSettings angular_controller(
+	2, // proportional gain (kP)
 	0, // integral gain (kI)
 	10, // derivative gain (kD)
 	3, // anti windup
@@ -194,7 +196,7 @@ void drive() {
 	int leftY = master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
 	int rightX = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
-	chassis.arcade(rightX, leftY);
+	chassis.arcade(leftY, rightX);
 }
 
 //Competition Functions
@@ -219,8 +221,13 @@ void printValuesOnBrain() {
 	}
 }
 
+void red_lights(){
+	led1.set_all(0xFF0000);
+}
 
 void initialize() {
+
+	red_lights();
 
 	chassis.calibrate();
 
@@ -266,15 +273,25 @@ void leftSideAuton(){
 
 void testAngularPid(){
 	// set position to x:0, y:0, heading:0
-    chassis.setPose(0, 0, 0);
+    
     // turn to face heading 90 with a very long timeout
     chassis.turnToHeading(90, 100000);
 }
 
+void testLateralPid() {
+	chassis.moveToPoint(0, 5, 1000);
+	//chassis.moveToPose(0, 5 , 0, 10000);
+}
+
 void autonomous() {
+	chassis.setPose(0, 0, 0);
 	//leavePark();
 	//leftSideAuton();
 	testAngularPid();
+	//testLateralPid();
+	intake.move(127);
+	pros::delay(5000);
+	intake.brake();
 	std::cout << "Ran auton" << std::endl;
 }
 
