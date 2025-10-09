@@ -140,11 +140,11 @@ void spinIndex(bool correctColor, bool opponentColor) {
         direction = correctColor ? 1 : -1;
 
         inde.move(127 * direction);
-        score.move(127 * 0.3 * (correctColor ? -1 : 0));
+        score.move(127 * 0.4 * (correctColor ? -1 : 0));
     }
 
     // if running, check if time has passed
-    if (running && pros::millis() - startTime >= 400) {
+    if (running && pros::millis() - startTime >= 200) {
         inde.brake();
         score.brake();
         running = false;
@@ -165,7 +165,7 @@ void colorSort() {
 }
 
 void spinIntake() {
-	intake.move(127*0.75);
+	intake.move(127*0.9);
 	intaking = true;
 	scoring = -1;
 	basket.set_value(0);
@@ -343,6 +343,50 @@ void leftSideAuton(){
 	stopAll();
 	pros::delay(500);
 	spinTopCenter();
+}
+
+void skillsAuton(){
+	chassis.moveToPoint(0, 31.5, 2000);
+	chassis.turnToHeading(90, 1000);
+	spinIntake();
+	scraper.set_value(true);
+	chassis.moveToPose(10, 31.5, 90, 2000);
+	pros::delay(1500);
+	chassis.moveToPose(0, 31.5, 90, 2000);
+	stopAll();
+	chassis.turnToHeading(-90, 1000);
+	chassis.moveToPose(-33.35, 31.5, -90, 4000);
+	spinLongGoal();
+	pros::delay(2000);
+	stopAll();
+	chassis.moveToPose(-25, 31.5, -90, 4000);
+	scraper.set_value(false);
+	chassis.turnToHeading(0, 1000);
+	chassis.moveToPose(-25, 41.5, 0, 4000);
+	chassis.turnToHeading(-90, 1000);
+	chassis.moveToPoint(-97, 41.5, 4000);
+	chassis.turnToHeading(180, 1000);
+	chassis.moveToPoint(-97, 31.5, 4000);
+	chassis.turnToHeading(-90, 1000);
+	//Starts to get very unsure from here
+	scraper.set_value(true);
+	spinIntake();
+	chassis.moveToPose(-123, 31.5, -90, 4000);
+	pros::delay(1500);
+	chassis.moveToPose(-97, 31.5, -90, 4000);
+	stopAll();
+	scraper.set_value(false);
+	chassis.turnToHeading(90, 1000);
+	chassis.moveToPose(-97-24, 31.5, 90, 4000);
+	spinLongGoal();
+	pros::delay(2000);
+	stopAll();
+	spinIntake();
+	chassis.moveToPose(-97-24+23, 31.5-24, 135, 4000);
+	pros::delay(1000);
+	chassis.moveToPose(-97-24+23+24+14, 31.5-24+24-14, 135, 4000);
+	spinTopCenter();
+
 }
 
 void testAngularPid(){
