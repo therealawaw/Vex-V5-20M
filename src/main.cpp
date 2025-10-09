@@ -13,6 +13,7 @@ pros::Motor inde(-5, pros::v5::MotorGears::green);
 pros::Motor score(-10, pros::v5::MotorGears::green);
 
 pros::adi::DigitalOut basket(1);
+pros::adi::DigitalOut scraper(2);
 pros::adi::Led led1('C', 10);
 
 pros::Imu imu(7);
@@ -139,11 +140,11 @@ void spinIndex(bool correctColor, bool opponentColor) {
         direction = correctColor ? 1 : -1;
 
         inde.move(127 * direction);
-        score.move(127 * 0.2 * (correctColor ? -1 : 0));
+        score.move(127 * 0.3 * (correctColor ? -1 : 0));
     }
 
     // if running, check if time has passed
-    if (running && pros::millis() - startTime >= 900) {
+    if (running && pros::millis() - startTime >= 400) {
         inde.brake();
         score.brake();
         running = false;
@@ -398,6 +399,12 @@ void opcontrol() {
 			spinIntake();
 
 		} else {stopAll();}
+
+		if (master.get_digital(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+			scraper.set_value(true);
+		} else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+			scraper.set_value(false);
+		}
 
 		//std::cout << "Finished loop" << std::endl;
 	}
