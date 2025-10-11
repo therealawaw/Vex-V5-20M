@@ -21,7 +21,7 @@ pros::Optical optical(12);
 pros::Rotation verticalRotation(-16); //SET REVERSAL AT SCHOOL
 pros::Rotation horizontalRotation(-20); //SET REVERSAL AT SCHOOL
 
-lemlib::TrackingWheel verticalWheel(&verticalRotation, lemlib::Omniwheel::NEW_2, -0.375); //SET DISTANCE AT SCHOOL
+lemlib::TrackingWheel verticalWheel(&verticalRotation, 1.955, -0.375); //SET DISTANCE AT SCHOOL
 lemlib::TrackingWheel horizontalWheel(&horizontalRotation, lemlib::Omniwheel::NEW_2, -1.25); //SET DISTANCE AT SCHOOL
 
 lemlib::OdomSensors odomSensors(&verticalWheel, nullptr, &horizontalWheel, nullptr, &imu);
@@ -35,26 +35,26 @@ lemlib::Drivetrain drivetrain(
 	8
 );
 
-lemlib::ControllerSettings lateral_controller(3, // proportional gain (kP)
+lemlib::ControllerSettings lateral_controller(6, // proportional gain (kP)
 	0, // integral gain (kI)
 	3, // derivative gain (kD)
 	3, // anti windup
-	1, // small error range, in inches
-	100, // small error range timeout, in milliseconds
-	3, // large error range, in inches
-	500, // large error range timeout, in milliseconds
-	20 // maximum acceleration (slew)
+	0, // small error range, in inches
+	0, // small error range timeout, in milliseconds
+	0, // large error range, in inches
+	0, // large error range timeout, in milliseconds
+	0 // maximum acceleration (slew)
 );
 
 lemlib::ControllerSettings angular_controller(
-	2, // proportional gain (kP)
+	5, // proportional gain (kP)
 	0, // integral gain (kI)
-	10, // derivative gain (kD)
-	3, // anti windup
-	1, // small error range, in degrees
-	100, // small error range timeout, in milliseconds
-	3, // large error range, in degrees
-	500, // large error range timeout, in milliseconds
+	35, // derivative gain (kD)
+	0, // anti windup
+	0, // small error range, in degrees
+	0, // small error range timeout, in milliseconds
+	0, // large error range, in degrees
+	0, // large error range timeout, in milliseconds
 	0 // maximum acceleration (slew)
 );
 
@@ -82,6 +82,7 @@ bool intaking = false;
 int scoring = 0; //0 = not scoring, 1 = bottom center, 2 = top center, 3 = long goal
 int blocksPassing = 0;
 int autonSelect = 0; //left = 0, right = 1, skills = 2
+int buttons = 000;
 
 std::string autonNames[3] = {"Left", "Right", "Skills"};
 
@@ -144,7 +145,7 @@ void spinIndex(bool correctColor, bool opponentColor) {
     }
 
     // if running, check if time has passed
-    if (running && pros::millis() - startTime >= 200) {
+    if (running && pros::millis() - startTime >= 250) {
         inde.brake();
         score.brake();
         running = false;
@@ -166,6 +167,15 @@ void colorSort() {
 
 void spinIntake() {
 	intake.move(127*0.9);
+	intaking = true;
+	scoring = -1;
+	basket.set_value(0);
+}
+
+void spinIntakeFull() {
+	intake.move(127*0.9);
+	inde.move(127);
+	score.move(-127*0.4);
 	intaking = true;
 	scoring = -1;
 	basket.set_value(0);
@@ -205,16 +215,6 @@ void drive() {
 
 //Competition Functions
 
-void on_center_button() {
-	static bool pressed = false;
-	pressed = !pressed;
-	if (pressed) {
-		pros::lcd::set_text(2, "I was pressed!");
-	} else {
-		pros::lcd::clear_line(2);
-	}
-}
-
 void printValuesOnBrain() {
 	while (true) {
 		pros::lcd::print(0, "Heading: %.2f", imu.get_heading());
@@ -229,6 +229,10 @@ void red_lights(){
 	led1.set_all(0xFF0000);
 }
 
+void onLeftPress() {
+
+}
+
 void initialize() {
 
 	red_lights();
@@ -237,7 +241,6 @@ void initialize() {
 
 	pros::lcd::initialize();
 	pros::lcd::set_text(1, "Hello PROS User!");
-	pros::lcd::register_btn1_cb(on_center_button);
 
 	//pros::Task printTask(printValuesOnBrain);
 
@@ -252,25 +255,32 @@ void disabled() {std::cout << "Ran disable" << std::endl;}
 void competition_initialize() {
 	static bool debounce = false;
 
+	std::cout << "Ran comp disable" << std::endl;
+
+	pros::lcd::set_text(1, "Atuton: " + autonNames[autonSelect]);
+
 	while (pros::competition::is_disabled)
 	{
-		uint8_t buttons = pros::lcd::read_buttons();
-		if (buttons == 100 && !debounce) // left button
+		unsigned int buttons = pros::lcd::read_buttons();
+		printf("Buttons Bitmap: %d\n", pros::lcd::read_buttons());
+		//std::cout << pros::lcd::read_buttons() << " // " << buttons << std::endl;
+		if (buttons == LCD_BTN_LEFT && !debounce) // left button
 		{
+			//std::cout << "left" << std::endl;
 			autonSelect = std::clamp(autonSelect-1, 0, 2);
-			pros::lcd::set_text(1, "Atuton: " + autonNames[autonSelect]);
+			pros::lcd::set_text(1, "Auton: " + autonNames[autonSelect]);
 			debounce = true;
-		} else if (buttons == 001 && !debounce) // right button
+		} else if (buttons == LCD_BTN_RIGHT && !debounce) // right button
 		{
 			autonSelect = std::clamp(autonSelect+1, 0, 2);
-			pros::lcd::set_text(1, "Atuton: " + autonNames[autonSelect]);
+			pros::lcd::set_text(1, "Auton: " + autonNames[autonSelect]);
 			debounce = true;
 		} 
-		else if (buttons == 010 && !debounce) // center button
+		else if (buttons == LCD_BTN_CENTER && !debounce) // center button
 		{
 			debounce = true;
 			break;
-		} else if (buttons == 0)
+		} else
 		{
 			debounce = false;
 		}
@@ -279,22 +289,22 @@ void competition_initialize() {
 	while (pros::competition::is_disabled)
 	{
 		uint8_t buttons = pros::lcd::read_buttons();
-		if (buttons == 100 && !debounce) // left button
+		if (buttons == LCD_BTN_LEFT && !debounce) // left button
 		{
 			allianceIsRed = !allianceIsRed;
 			pros::lcd::set_text(2, "Alliance: " + allianceIsRed ? "Red" : "Blue");
 			debounce = true;
-		} else if (buttons == 001 && !debounce) // right button
+		} else if (buttons == LCD_BTN_RIGHT && !debounce) // right button
 		{
 			allianceIsRed = !allianceIsRed;
 			pros::lcd::set_text(2, "Alliance: " + allianceIsRed ? "Red" : "Blue");
 			debounce = true;
 		} 
-		else if (buttons == 010 && !debounce) // center button
+		else if (buttons == LCD_BTN_CENTER && !debounce) // center button
 		{
 			debounce = true;
 			break;
-		} else if (buttons == 0)
+		} else
 		{
 			debounce = false;
 		}
@@ -309,7 +319,7 @@ void rightSideAuton(){
 	//pros::Task colorSort_thread(colorSortTask);
 	chassis.moveToPoint(0, 7.5, 100);
 	chassis.turnToHeading(25, 100);
-	spinIntake();
+	spinIntakeFull();
 	chassis.moveToPoint(7.5, 17.5, 100);
 	stopAll();
 	chassis.turnToHeading(-45, 100);
@@ -329,7 +339,7 @@ void leftSideAuton(){
 	//pros::Task colorSort_thread(colorSortTask);
 	chassis.moveToPoint(0, 7.5, 100);
 	chassis.turnToHeading(-25, 100);
-	spinIntake();
+	spinIntakeFull();
 	chassis.moveToPoint(-7.5, 17.5, 100);
 	stopAll();
 	chassis.turnToHeading(45, 100);
@@ -348,7 +358,7 @@ void leftSideAuton(){
 void skillsAuton(){
 	chassis.moveToPoint(0, 31.5, 2000);
 	chassis.turnToHeading(90, 1000);
-	spinIntake();
+	spinIntakeFull();
 	scraper.set_value(true);
 	chassis.moveToPose(10, 31.5, 90, 2000);
 	pros::delay(1500);
@@ -370,7 +380,7 @@ void skillsAuton(){
 	chassis.turnToHeading(-90, 1000);
 	//Starts to get very unsure from here
 	scraper.set_value(true);
-	spinIntake();
+	spinIntakeFull();
 	chassis.moveToPose(-123, 31.5, -90, 4000);
 	pros::delay(1500);
 	chassis.moveToPose(-97, 31.5, -90, 4000);
@@ -381,7 +391,7 @@ void skillsAuton(){
 	spinLongGoal();
 	pros::delay(2000);
 	stopAll();
-	spinIntake();
+	spinIntakeFull();
 	chassis.moveToPose(-97-24+23, 31.5-24, 135, 4000);
 	pros::delay(1000);
 	chassis.moveToPose(-97-24+23+24+14, 31.5-24+24-14, 135, 4000);
@@ -397,7 +407,7 @@ void testAngularPid(){
 }
 
 void testLateralPid() {
-	chassis.moveToPoint(0, 5, 1000);
+	chassis.moveToPose(24, 24, 90, 1000);
 	//chassis.moveToPose(0, 5 , 0, 10000);
 }
 
@@ -406,7 +416,14 @@ void autonomous() {
 	//leavePark();
 	//leftSideAuton();
 	//testAngularPid();
-	testLateralPid();
+	//testLateralPid();
+	if (autonSelect == 0) {
+		leftSideAuton();
+	} else if (autonSelect == 1) {
+		rightSideAuton();
+	} else if (autonSelect == 2) {
+		skillsAuton();
+	}
 	intake.move(127);
 	pros::delay(5000);
 	intake.brake();
